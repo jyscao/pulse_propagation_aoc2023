@@ -34,11 +34,11 @@ defmodule InputParser do
   def get_module_outputs(conn_map) do
     for {mod_name, outputs_info} <- conn_map
       |> Stream.map(fn {name, outputs} ->
-        cond do
-          name == "broadcaster"          -> {"broadcaster", outputs}
-          String.starts_with?(name, "%") -> {String.trim_leading(name, "%"), outputs}
-          String.starts_with?(name, "&") -> {String.trim_leading(name, "&"), outputs}
-          true                           -> raise("this should not be reached")
+        case name do
+          "broadcaster"             -> {"broadcaster", outputs}
+          <<"%", mod_name::binary>> -> {mod_name, outputs}
+          <<"&", mod_name::binary>> -> {mod_name, outputs}
+          _                         -> raise("this should not be reached")
         end
       end),
       into: %{}, do: {mod_name, outputs_info}
