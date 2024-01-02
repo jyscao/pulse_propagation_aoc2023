@@ -63,10 +63,11 @@ defmodule Module.System do
   end
 
   defp wait_till_system_is_stable(mod_types) do
+    wait_factor = map_size(mod_types)
     if system_is_stable?(mod_types) do
       true
     else
-      Process.sleep(10)
+      Process.sleep(2 * wait_factor)
       wait_till_system_is_stable(mod_types)
     end
   end

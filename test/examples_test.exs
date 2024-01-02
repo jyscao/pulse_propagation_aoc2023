@@ -14,12 +14,14 @@ defmodule ExamplesTest do
   end
 
   @tag t3: true
+  @tag timeout: 20000
   test "example_1 - 1000x" do
     {lows, highs} = PulsePropagation.run_system_and_report("data/example_1.txt", 1000) |> IO.inspect
     assert lows == 8000 and highs == 4000
   end
 
   @tag t4: true
+  @tag timeout: 20000
   test "example_2 - 1000x" do
     {lows, highs} = PulsePropagation.run_system_and_report("data/example_2.txt", 1000) |> IO.inspect
     assert lows == 4250 and highs == 2750
