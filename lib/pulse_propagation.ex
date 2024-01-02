@@ -7,7 +7,7 @@ defmodule PulsePropagation do
     conn_map = InputParser.get_connections_map(module_spec_file)
 
     mod_types = InputParser.get_module_types_map(conn_map)
-    mod_outputs = InputParser.get_module_outputs(conn_map, mod_types)
+    mod_outputs = InputParser.get_module_outputs(conn_map)
     conj_inputs = InputParser.get_conj_inputs_map(conn_map)
 
     {mod_types, mod_outputs, conj_inputs}

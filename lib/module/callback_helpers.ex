@@ -4,12 +4,12 @@ defmodule Module.CallbackHelpers do
     {:registered_name, src_mod} = Process.info(self(), :registered_name)
 
     send_status_all = Map.get(module_state, :outputs)
-      |> Enum.map(fn {mod_name, mod_type} -> Module.Client.receive_pulse(mod_name, src_mod, pulse_to_send) end)
+      |> Enum.map(fn mod_name -> Module.Client.receive_pulse(mod_name, src_mod, pulse_to_send) end)
       |> Enum.all?(fn reply -> reply == :pulse_received end)
 
     if send_status_all do
       Map.get(module_state, :outputs)
-      |> Enum.each(fn {mod_name, mod_type} -> Module.Client.send_pulse(mod_name) end)
+      |> Enum.each(fn mod_name -> Module.Client.send_pulse(mod_name) end)
 
       {:noreply, increment_pulse_count(pulse_to_send, module_state)}
     else

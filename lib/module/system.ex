@@ -21,15 +21,14 @@ defmodule Module.System do
 
   @impl true
   def init({module_types, module_outputs, conj_inputs}) do
-    atomize_outputs = fn mods_ls -> mods_ls |> Enum.map(fn {mn, mt} -> {String.to_atom(mn), mt} end) end
-    atomize_inputs  = fn mods_ls -> mods_ls |> Enum.map(fn mn -> String.to_atom(mn) end) end
+    atomize  = fn mods_ls -> mods_ls |> Enum.map(fn mn -> String.to_atom(mn) end) end
 
     module_types
     |> Enum.each(fn {mod_name, mod_type} -> 
       case {mod_name, mod_type} do
-        {"broadcaster", Module.Broadcaster} -> Module.Client.start(:broadcaster, mod_type, atomize_outputs.(module_outputs["broadcaster"]))
-        {mod_name, Module.FlipFlop}         -> Module.Client.start(String.to_atom(mod_name), mod_type, atomize_outputs.(module_outputs[mod_name]))
-        {mod_name, Module.Conjunction}      -> Module.Client.start(String.to_atom(mod_name), mod_type, atomize_outputs.(module_outputs[mod_name]), atomize_inputs.(conj_inputs[mod_name]))
+        {"broadcaster", Module.Broadcaster} -> Module.Client.start(:broadcaster, mod_type, atomize.(module_outputs["broadcaster"]))
+        {mod_name, Module.FlipFlop}         -> Module.Client.start(String.to_atom(mod_name), mod_type, atomize.(module_outputs[mod_name]))
+        {mod_name, Module.Conjunction}      -> Module.Client.start(String.to_atom(mod_name), mod_type, atomize.(module_outputs[mod_name]), atomize.(conj_inputs[mod_name]))
         {mod_name, Module.Sink}             -> Module.Client.start(String.to_atom(mod_name), mod_type)
       end
     end) |> IO.inspect
@@ -48,7 +47,7 @@ defmodule Module.System do
   @impl true
   def handle_call({:count_pulses, run_count}, _from, module_types_map) do
     pulses_sent = module_types_map
-    |> Enum.map(fn {mod_name, mod_type} ->
+    |> Enum.map(fn {mod_name, _mod_type} ->
       mod_state = Module.Client.get_state(String.to_atom(mod_name))
       {mod_state.low_sent, mod_state.high_sent}
     end)

@@ -31,15 +31,13 @@ defmodule InputParser do
       into: %{}, do: {mod_name, type}
   end
 
-  def get_module_outputs(conn_map, mod_types) do
-    add_output_type = fn output_ls -> output_ls |> Enum.map(fn mn -> {mn, Map.get(mod_types, mn)} end) end
-
+  def get_module_outputs(conn_map) do
     for {mod_name, outputs_info} <- conn_map
       |> Stream.map(fn {name, outputs} ->
         cond do
-          name == "broadcaster"          -> {"broadcaster", add_output_type.(outputs)}
-          String.starts_with?(name, "%") -> {String.trim_leading(name, "%"), add_output_type.(outputs)}
-          String.starts_with?(name, "&") -> {String.trim_leading(name, "&"), add_output_type.(outputs)}
+          name == "broadcaster"          -> {"broadcaster", outputs}
+          String.starts_with?(name, "%") -> {String.trim_leading(name, "%"), outputs}
+          String.starts_with?(name, "&") -> {String.trim_leading(name, "&"), outputs}
           true                           -> raise("this should not be reached")
         end
       end),
