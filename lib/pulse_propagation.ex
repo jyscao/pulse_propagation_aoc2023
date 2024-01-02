@@ -13,10 +13,10 @@ defmodule PulsePropagation do
     {mod_types, mod_outputs, conj_inputs}
   end
 
-  def run_system_and_report(module_spec_file) do
+  def run_system_and_report(module_spec_file, run_count \\ 1) do
     parsed_input_maps = parse_input(module_spec_file)
     Module.System.start(parsed_input_maps)
-    Module.System.activate_once()
-    Module.System.get_pulses_sent
+    Module.System.activate(run_count)
+    Module.System.get_pulses_sent(run_count)
   end
 end

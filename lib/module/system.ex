@@ -8,12 +8,12 @@ defmodule Module.System do
     GenServer.start(__MODULE__, parsed_input_maps, name: __MODULE__)
   end
 
-  def activate_once do
-    GenServer.call(__MODULE__, :activate_once)
+  def activate(run_count) do
+    GenServer.call(__MODULE__, {:activate, run_count}, 20 * run_count)
   end
 
-  def get_pulses_sent do
-    GenServer.call(__MODULE__, :count_pulses)
+  def get_pulses_sent(run_count) do
+    GenServer.call(__MODULE__, {:count_pulses, run_count})
   end
 
 
@@ -38,12 +38,28 @@ defmodule Module.System do
   end
 
   @impl true
-  def handle_call(:activate_once, _from, module_types_map) do
+  def handle_call({:activate, run_count}, _from, module_types_map) do
+    1..run_count
+    |> Enum.each(fn _i -> activate_once() ; wait_till_system_is_stable(module_types_map) end)
+
+    {:reply, :ok, module_types_map}
+  end
+
+  @impl true
+  def handle_call({:count_pulses, run_count}, _from, module_types_map) do
+    pulses_sent = module_types_map
+    |> Enum.map(fn {mod_name, mod_type} ->
+      mod_state = apply(mod_type, :get_state, [String.to_atom(mod_name)])
+      {mod_state.low_sent, mod_state.high_sent}
+    end)
+    |> Enum.reduce({run_count, 0}, fn {low_curr, high_curr}, {low_tot, high_tot} -> {low_tot + low_curr, high_tot + high_curr} end)
+
+    {:reply, pulses_sent, module_types_map}
+  end
+
+  def activate_once do
     :pulse_received = Module.Broadcaster.receive_pulse(:broadcaster, :button, :pulse_low)
     Module.Broadcaster.send_pulse(:broadcaster)
-
-    wait_till_system_is_stable(module_types_map)
-    {:reply, :ok, module_types_map}
   end
 
   defp wait_till_system_is_stable(mod_types) do
@@ -57,23 +73,10 @@ defmodule Module.System do
 
   defp system_is_stable?(mod_types) do
     mod_types
-    |> Enum.map(fn {mod_name, mod_type} -> 
+    |> Enum.map(fn {mod_name, _t} -> 
       {:message_queue_len, msgq_len} = Process.info(Process.whereis(String.to_atom(mod_name)), :message_queue_len)
       msgq_len
     end)
     |> Enum.all?(fn msgq_len -> msgq_len === 0 end)
-  end
-
-
-  @impl true
-  def handle_call(:count_pulses, _from, module_types_map) do
-    pulses_sent = module_types_map
-    |> Enum.map(fn {mod_name, mod_type} ->
-      mod_state = apply(mod_type, :get_state, [String.to_atom(mod_name)])
-      {mod_state.low_sent, mod_state.high_sent}
-    end)
-    |> Enum.reduce({1, 0}, fn {low_curr, high_curr}, {low_tot, high_tot} -> {low_tot + low_curr, high_tot + high_curr} end)
-
-    {:reply, pulses_sent, module_types_map}
   end
 end
