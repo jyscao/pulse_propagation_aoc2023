@@ -9,7 +9,7 @@ defmodule Module.System do
   end
 
   def activate(run_count) do
-    GenServer.call(__MODULE__, {:activate, run_count}, 20 * run_count)
+    GenServer.call(__MODULE__, {:activate, run_count}, 120000)
   end
 
   def get_pulses_sent(run_count) do
@@ -27,12 +27,12 @@ defmodule Module.System do
     module_types
     |> Enum.each(fn {mod_name, mod_type} -> 
       case {mod_name, mod_type} do
-        {"broadcaster", Module.Broadcaster} -> apply(mod_type, :start, [:broadcaster, atomize_outputs.(module_outputs["broadcaster"])])
-        {mod_name, Module.FlipFlop}         -> apply(mod_type, :start, [String.to_atom(mod_name), atomize_outputs.(module_outputs[mod_name])])
-        {mod_name, Module.Conjunction}      -> apply(mod_type, :start, [String.to_atom(mod_name), atomize_outputs.(module_outputs[mod_name]), atomize_inputs.(conj_inputs[mod_name])])
-        {mod_name, Module.Sink}             -> apply(mod_type, :start, [String.to_atom(mod_name)])
+        {"broadcaster", Module.Broadcaster} -> Module.Client.start(:broadcaster, mod_type, atomize_outputs.(module_outputs["broadcaster"]))
+        {mod_name, Module.FlipFlop}         -> Module.Client.start(String.to_atom(mod_name), mod_type, atomize_outputs.(module_outputs[mod_name]))
+        {mod_name, Module.Conjunction}      -> Module.Client.start(String.to_atom(mod_name), mod_type, atomize_outputs.(module_outputs[mod_name]), atomize_inputs.(conj_inputs[mod_name]))
+        {mod_name, Module.Sink}             -> Module.Client.start(String.to_atom(mod_name), mod_type)
       end
-    end)
+    end) |> IO.inspect
 
     {:ok, module_types}
   end
@@ -49,7 +49,7 @@ defmodule Module.System do
   def handle_call({:count_pulses, run_count}, _from, module_types_map) do
     pulses_sent = module_types_map
     |> Enum.map(fn {mod_name, mod_type} ->
-      mod_state = apply(mod_type, :get_state, [String.to_atom(mod_name)])
+      mod_state = Module.Client.get_state(String.to_atom(mod_name))
       {mod_state.low_sent, mod_state.high_sent}
     end)
     |> Enum.reduce({run_count, 0}, fn {low_curr, high_curr}, {low_tot, high_tot} -> {low_tot + low_curr, high_tot + high_curr} end)
@@ -58,8 +58,8 @@ defmodule Module.System do
   end
 
   def activate_once do
-    :pulse_received = Module.Broadcaster.receive_pulse(:broadcaster, :button, :pulse_low)
-    Module.Broadcaster.send_pulse(:broadcaster)
+    :pulse_received = Module.Client.receive_pulse(:broadcaster, :button, :pulse_low)
+    Module.Client.send_pulse(:broadcaster)
   end
 
   defp wait_till_system_is_stable(mod_types) do

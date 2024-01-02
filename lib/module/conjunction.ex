@@ -3,27 +3,6 @@ defmodule Module.Conjunction do
   defstruct [:outputs, :n_outs, :memory, low_sent: 0, high_sent: 0]
 
 
-  # client API
-
-  def start(name, outputs, inputs) do
-    GenServer.start_link(__MODULE__, {outputs, inputs}, name: name)
-  end
-
-  def get_state(name) do
-    GenServer.call(name, :get_state)
-  end
-
-  def receive_pulse(name, src, pulse) do
-    GenServer.call(name, {:receive, src, pulse})
-  end
-
-  def send_pulse(name) do
-    GenServer.cast(name, :send)
-  end
-
-
-  # callbacks
-
   @impl true
   def init({outputs, inputs}) do
     memory = for input <- inputs, into: %{}, do: {input, :pulse_low}
@@ -47,12 +26,12 @@ defmodule Module.Conjunction do
     pulse_to_send = if Enum.all?(module_state.memory |> Map.values(), fn pv -> pv == :pulse_high end) do :pulse_low else :pulse_high end
 
     send_status_all = Map.get(module_state, :outputs)
-      |> Enum.map(fn {mod_name, mod_type} -> apply(mod_type, :receive_pulse, [mod_name, src_mod, pulse_to_send]) end)
+      |> Enum.map(fn {mod_name, mod_type} -> Module.Client.receive_pulse(mod_name, src_mod, pulse_to_send) end)
       |> Enum.all?(fn reply -> reply == :pulse_received end)
 
     if send_status_all do
       Map.get(module_state, :outputs)
-      |> Enum.each(fn {mod_name, mod_type} -> apply(mod_type, :send_pulse, [mod_name]) end)
+      |> Enum.each(fn {mod_name, mod_type} -> Module.Client.send_pulse(mod_name) end)
 
       {:noreply, increment_pulse_count(pulse_to_send, module_state)}
     else

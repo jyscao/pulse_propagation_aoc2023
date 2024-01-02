@@ -3,29 +3,8 @@ defmodule Module.Sink do
   defstruct [low_sent: 0, high_sent: 0, low_received: 0, high_received: 0]
 
 
-  # client API
-
-  def start(name) do
-    GenServer.start_link(__MODULE__, nil, name: name)
-  end
-
-  def get_state(name) do
-    GenServer.call(name, :get_state)
-  end
-
-  def receive_pulse(name, _src, pulse) do
-    GenServer.call(name, {:receive, pulse})
-  end
-
-  def send_pulse(_name) do
-    :pass
-  end
-
-
-  # callbacks
-
   @impl true
-  def init(_) do
+  def init({nil, nil}) do
     {:ok, %__MODULE__{}}
   end
 
@@ -35,7 +14,7 @@ defmodule Module.Sink do
   end
 
   @impl true
-  def handle_call({:receive, pulse}, _, module_state) do
+  def handle_call({:receive, _src, pulse}, _, module_state) do
     new_state = case pulse do
       :pulse_low  -> %{module_state | low_received: module_state.low_received + 1}
       :pulse_high -> %{module_state | high_received: module_state.high_received + 1}
@@ -43,4 +22,8 @@ defmodule Module.Sink do
     {:reply, :pulse_received, new_state}
   end
 
+  @impl true
+  def handle_cast(:send, module_state) do
+    {:noreply, module_state}
+  end
 end
