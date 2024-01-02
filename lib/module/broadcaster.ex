@@ -20,24 +20,6 @@ defmodule Module.Broadcaster do
 
   @impl true
   def handle_cast(:send, module_state) do
-    {:registered_name, src_mod} = Process.info(self(), :registered_name)
-
-    send_status_all = Map.get(module_state, :outputs)
-      |> Enum.map(fn {mod_name, mod_type} -> Module.Client.receive_pulse(mod_name, src_mod, :pulse_low) end)
-      |> Enum.all?(fn reply -> reply == :pulse_received end)
-
-    if send_status_all do
-      Map.get(module_state, :outputs)
-      |> Enum.each(fn {mod_name, mod_type} -> Module.Client.send_pulse(mod_name) end)
-
-      {:noreply, increment_pulse_low_count(module_state)}
-    else
-      raise("one or more pulse sends failed")
-    end
-  end
-
-  defp increment_pulse_low_count(module_state) do
-    low_sent = module_state.low_sent + module_state.n_outs
-    %{module_state | low_sent: low_sent}
+    Module.CallbackHelpers.send_pulse(module_state, :pulse_low)
   end
 end
