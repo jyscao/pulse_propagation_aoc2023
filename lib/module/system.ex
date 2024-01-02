@@ -1,6 +1,26 @@
 defmodule Module.System do
+  use GenServer
 
-  def initialize(module_types, module_outputs, conj_inputs) do
+
+  # client API
+
+  def start(parsed_input_maps) do
+    GenServer.start(__MODULE__, parsed_input_maps, name: __MODULE__)
+  end
+
+  def activate_once do
+    GenServer.call(__MODULE__, :activate_once)
+  end
+
+  def get_pulses_sent do
+    GenServer.call(__MODULE__, :count_pulses)
+  end
+
+
+  # callbacks
+
+  @impl true
+  def init({module_types, module_outputs, conj_inputs}) do
     atomize_outputs = fn mods_ls -> mods_ls |> Enum.map(fn {mn, mt} -> {String.to_atom(mn), mt} end) end
     atomize_inputs  = fn mods_ls -> mods_ls |> Enum.map(fn mn -> String.to_atom(mn) end) end
 
@@ -13,19 +33,47 @@ defmodule Module.System do
         {mod_name, Module.Sink}             -> apply(mod_type, :start, [String.to_atom(mod_name)])
       end
     end)
+
+    {:ok, module_types}
   end
 
-  def activate_once do
+  @impl true
+  def handle_call(:activate_once, _from, module_types_map) do
     :pulse_received = Module.Broadcaster.receive_pulse(:broadcaster, :button, :pulse_low)
     Module.Broadcaster.send_pulse(:broadcaster)
+
+    wait_till_system_is_stable(module_types_map)
+    {:reply, :ok, module_types_map}
   end
 
-  def count_pulses(mod_types) do
+  defp wait_till_system_is_stable(mod_types) do
+    if system_is_stable?(mod_types) do
+      true
+    else
+      Process.sleep(10)
+      wait_till_system_is_stable(mod_types)
+    end
+  end
+
+  defp system_is_stable?(mod_types) do
     mod_types
+    |> Enum.map(fn {mod_name, mod_type} -> 
+      {:message_queue_len, msgq_len} = Process.info(Process.whereis(String.to_atom(mod_name)), :message_queue_len)
+      msgq_len
+    end)
+    |> Enum.all?(fn msgq_len -> msgq_len === 0 end)
+  end
+
+
+  @impl true
+  def handle_call(:count_pulses, _from, module_types_map) do
+    pulses_sent = module_types_map
     |> Enum.map(fn {mod_name, mod_type} ->
       mod_state = apply(mod_type, :get_state, [String.to_atom(mod_name)])
       {mod_state.low_sent, mod_state.high_sent}
     end)
     |> Enum.reduce({1, 0}, fn {low_curr, high_curr}, {low_tot, high_tot} -> {low_tot + low_curr, high_tot + high_curr} end)
+
+    {:reply, pulses_sent, module_types_map}
   end
 end
