@@ -55,3 +55,21 @@ defmodule InputParser do
   end
 
 end
+
+
+# conn_map = InputParser.get_connections_map("data/circuits.txt")
+
+# conn_map = InputParser.get_connections_map("data/example_1.txt")
+# mod_types = InputParser.get_module_types_map(conn_map)
+# mod_outputs = InputParser.get_module_outputs(conn_map, mod_types)
+# conj_inputs = InputParser.get_conj_inputs_map(conn_map)
+
+
+### TODO: review this guy's elixir AoC code to learn elixir better
+# https://github.com/mathsaey/advent_of_code_utils
+# https://github.com/mathsaey/adventofcode
+
+
+
+### TODO: also write blog post about day 24 part 2, and use manim to illustrate
+### maybe use Julia to do the calculations?

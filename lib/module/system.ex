@@ -9,7 +9,9 @@ defmodule Module.System do
   end
 
   def activate(run_count) do
-    GenServer.call(__MODULE__, {:activate, run_count}, 120000)
+    GenServer.call(__MODULE__, {:activate, run_count}, 600000)
+
+    # TODO: use elixir profiler to find bottleneck
   end
 
   def get_pulses_sent(run_count) do
@@ -42,6 +44,9 @@ defmodule Module.System do
     |> Enum.each(fn _i -> activate_once() ; wait_till_system_is_stable(module_types_map) end)
 
     {:reply, :ok, module_types_map}
+
+    # FIXME: need to wait for cycle to finish before beginning new one -> use raw send and receives to manually synchronize (?)
+    # NOTE: look into Finitomata(?) - https://hexdocs.pm/finitomata/readme.html
   end
 
   @impl true
@@ -66,7 +71,8 @@ defmodule Module.System do
     if system_is_stable?(mod_types) do
       true
     else
-      Process.sleep(2 * wait_factor)
+      # Process.sleep(wait_factor)
+      Process.sleep(10)
       wait_till_system_is_stable(mod_types)
     end
   end

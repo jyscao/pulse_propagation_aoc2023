@@ -9,7 +9,7 @@ defmodule Module.Client do
   end
 
   def receive_pulse(name, src, pulse) do
-    GenServer.call(name, {:receive, src, pulse}, 120000)
+    GenServer.call(name, {:receive, src, pulse}, 1200000)
   end
 
   def send_pulse(name) do

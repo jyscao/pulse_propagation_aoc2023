@@ -26,4 +26,14 @@ defmodule ExamplesTest do
     {lows, highs} = PulsePropagation.run_system_and_report("data/example_2.txt", 1000) |> IO.inspect
     assert lows == 4250 and highs == 2750
   end
+
+  @tag real: true
+  @tag timeout: :infinity
+  test "real - 1000x" do
+    # {lows, highs} = PulsePropagation.run_system_and_report("data/circuits.txt", 1) |> IO.inspect
+
+    {lows, highs} = PulsePropagation.run_system_and_report("data/circuits.txt", 100) |> IO.inspect
+    # assert lows * highs == 825167435
+    # # assert lows == 4250 and highs == 2750
+  end
 end

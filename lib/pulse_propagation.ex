@@ -20,3 +20,10 @@ defmodule PulsePropagation do
     Module.System.get_pulses_sent(run_count)
   end
 end
+
+# mod_types = PulsePropagation.init_system("data/example_1.txt")
+# PulsePropagation.activate
+# PulsePropagation.get_pulses_sent(mod_types)
+
+
+# pis = {t, o, i} = PulsePropagation.parse_input("data/example_1.txt")
